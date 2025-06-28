@@ -9,9 +9,9 @@ def match_job(user_input, model, collection, top_k=20):
         return []
 
     results = []
-    for job in collection.find({"combined_embedding": {"$exists": True}}):
+    for job in collection.find({"all_combined_embedding": {"$exists": True}}):
         try:
-            job_emb = np.array(job["combined_embedding"]).reshape(1, -1)
+            job_emb = np.array(job["all_combined_embedding"]).reshape(1, -1)
             score = cosine_similarity(user_emb, job_emb)[0][0]
             job["score"] = round(float(score), 4)
             results.append({
