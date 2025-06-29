@@ -45,7 +45,7 @@ A functional local prototype showcasing a AI-powered job support platform for Ex
 </p>
 <p float="left">
   <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img3.png" width="400"/>
-  <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img4.png" width="400"/>
+  <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img7.png" width="400"/>
 </p>
 <p float="left">
   <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img5.png" width="400"/>
