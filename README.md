@@ -39,14 +39,21 @@ SanikHire offers a streamlined and user-friendly experience for ex-servicemen to
 A functional local prototype showcasing a AI-powered job support platform for Ex-Servicemen – with the potential to scale into a full-fledged deployment.
 
 ## Screenshot
+Search Page
 <p float="left">
   <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img1.png" width="400"/>
   <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img2.png" width="400"/>
 </p>
+CV Generator
 <p float="left">
-  <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img3.png" width="400"/>
-  <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img7.jpg" width="400"/>
+  <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img7.jpg" width="800"/>
 </p>
+Chatbot
+<p float="left">
+  <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img8.jpg" width="400"/>
+  <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img9.jpg" width="400"/>
+</p>
+Recommendation and User Registration
 <p float="left">
   <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img5.png" width="400"/>
   <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img6.png" width="400"/>
