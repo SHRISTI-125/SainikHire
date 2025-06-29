@@ -35,10 +35,11 @@ SanikHire offers a streamlined and user-friendly experience for ex-servicemen to
 </p>
 
 
-## Outcome
+
+## 📌 Outcome
 A functional local prototype showcasing a AI-powered job support platform for Ex-Servicemen – with the potential to scale into a full-fledged deployment.
 
-## Screenshot
+## 📷 Screenshot
 Search Page
 <p float="left">
   <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img1.png" width="400"/>
