@@ -28,7 +28,8 @@
 1. Clone the repository:
    ```bash
    git clone https://github.com/SHRISTI-125/SainikHire.git
-   cd https://github.com/SHRISTI-125/SainikHire
+   cd SainikHire
+   cd "Searching and Recommendation Frontend"
 2. Install Dependencies
    ```bash
    npm install
