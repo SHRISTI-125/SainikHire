@@ -59,3 +59,8 @@ Recommendation and User Registration
   <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img6.png" width="400"/>
 </p>
 
+Fetching the job details
+<p float="left">
+  <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img3.png" width="400"/>
+  <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img11.jpg" width="400"/>
+</p>
