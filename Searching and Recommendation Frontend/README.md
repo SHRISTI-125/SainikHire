@@ -1,6 +1,6 @@
 # Project Structure
 <pre>  
- Search and Recommendation Fronetend/
+ Search and Recommendation Frontend/
 ├── node_modules/
 ├── public/
 ├── src/
