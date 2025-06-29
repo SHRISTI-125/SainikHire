@@ -15,7 +15,7 @@
    ```bash
    git clone https://github.com/SHRISTI-125/SainikHire.git
    cd SainikHire
-   cd "Searching and Recommendation Frontend"
+   cd "Searching and Recommendation Backend"
 2. Install Dependencies
    ```bash
    pip install -r requirements.txt
