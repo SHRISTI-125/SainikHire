@@ -6,6 +6,8 @@ def jobupdate(model, collection):
     data['skills_embedding'] = model.encode(data['skills']).tolist()
 
     educations = data.get('education', '')
+    location = data.get('location')
+    rank=data.get('rank')
     combined_text = f"{educations} {data['skills']} {location} {rank}"
     data['all_combined_embedding'] = model.encode(combined_text).tolist()
 
