@@ -6,7 +6,7 @@ import json
 import re
 
 app = Flask(__name__)
-CORS(app)  # ✅ This allows all origins (good for development)
+CORS(app) 
 
 # Load the prompt template from a file
 with open("prompt_template.txt", "r") as f:
@@ -30,7 +30,7 @@ def prompting_cv(data):
     # )
 
     # Call Ollama local API
-    print(">>> Prompt to Ollama:\n", prompt_text)  # 👈 Add this for debugging
+    print(">>> Prompt to Ollama:\n", prompt_text) 
 
     response = requests.post(
         "http://localhost:11434/api/generate",
@@ -41,15 +41,15 @@ def prompting_cv(data):
         }
     )
 
-    print(">>> Ollama response status:", response.status_code)  # 👈 Add this
-    print(">>> Ollama response body:", response.text[:500])     # 👈 Add this
+    print(">>> Ollama response status:", response.status_code)  
+    print(">>> Ollama response body:", response.text[:500])     
 
     if response.status_code != 200:
         raise Exception(f"Ollama error {response.status_code}: {response.text}")
      # Extract and clean response
     raw_response = response.json()["response"]
 
-    # 🧽 Remove <think>...</think> section (if any)
+    #  Remove <think>...</think> section (if any)
     clean_response = re.sub(r"<think>.*?</think>", "", raw_response, flags=re.DOTALL).strip()
 
     return clean_response
@@ -75,23 +75,6 @@ def generate_cv():
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-
-
-# @app.route('/render-resume', methods=['POST'])
-# def render_resume():
-#     data = request.json
-#     generated_resume = prompting_cv(data)
-#     structured = json.loads(generated_resume)  # ✅ now it will work
-#     data.update(structured)  # ⬅️ map fields into template
-
-
-
-#     # return render_template(template_name, **data)
-#     template_name = data.get("template", "template1.html")  # default template
-#     try:
-#         return render_template(template_name, **data)
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':
