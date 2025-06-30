@@ -6,8 +6,8 @@ def jobupdate(model, collection):
     data['skills_embedding'] = model.encode(data['skills']).tolist()
 
     educations = data.get('education', '')
-    combined_text = f"{educations} {data['skills']}"
-    data['combined_embedding'] = model.encode(combined_text).tolist()
+    combined_text = f"{educations} {data['skills']} {location} {rank}"
+    data['all_combined_embedding'] = model.encode(combined_text).tolist()
 
     required_fields = ['title','company','description', 'skills','location', 'rank','education','date_of_posting','last_date','apply_link' ]
     
