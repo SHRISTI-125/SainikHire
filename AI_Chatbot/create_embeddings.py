@@ -1,6 +1,6 @@
 
 import os
-import shutil # Needed for removing old FAISS directories
+import shutil #shutil is used to clean up old vector store before creating a new one.
 
 from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -15,7 +15,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 
 
-# --- Configuration Paths ---
+# --- Configuration Paths --- 
 
 # Folder where your PDF documents are located
 PDF_FOLDER = "data/"
@@ -69,8 +69,9 @@ def split_docs_into_chunks(loaded_documents):
 
     # Configure how documents are split into smaller pieces
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500, # Size of each text chunk in characters
-        chunk_overlap=230, # Overlap between chunks to maintain context
+        chunk_size = 900,
+        chunk_overlap = 100,
+        # Overlap between chunks to maintain context
         length_function=len, # Method to calculate chunk length
     )
 
