@@ -4,16 +4,28 @@ import pandas as pd
 from bs4 import BeautifulSoup as soup
 from datetime import datetime, timedelta
 
-#loading the api key
+# Load API key from .env
 from dotenv import load_dotenv
 load_dotenv()
-import os
 
 SCRAPINGDOG_API_KEY = os.getenv("SCRAPINGDOG_API_KEY")
 TARGET_BASE_URL = "https://www.glassdoor.co.in/Job/india-veteran-logistics-jobs-SRCH_IL.0,5_IN115_KO6,23.htm"
-JOBS_CSV_PATH = "data/jobs.csv"  # Save scraped jobs in data/jobs.csv
+JOBS_CSV_PATH = "data/jobs.csv"
 
-# --- scraping logic ---
+# --- Helper function to extract logistics-related skills ---
+def extract_skills(description):
+    logistics_skills = [
+        'supply chain', 'warehouse', 'inventory management', 'logistics', 'fleet management',
+        'transportation', 'distribution', 'order fulfillment', 'sap', 'erp', 'ms excel', 'ms office',
+        'vendor management', 'logistics coordination', 'shipping', 'procurement', 'freight',
+        'logistics planning', 'import export', 'customs clearance', 'demand planning',
+        'material handling', 'scheduling', 'delivery management', 'route optimization',
+        'operations management', 'team management', 'dispatch', 'data entry', 'tracking'
+    ]
+    found_skills = [skill for skill in logistics_skills if skill.lower() in description.lower()]
+    return ', '.join(found_skills) if found_skills else 'Not specified'
+
+# --- Request a webpage via Scrapingdog ---
 def get_page_with_scrapingdog(url, api_key):
     payload = {'api_key': api_key, 'url': url}
     try:
@@ -23,7 +35,8 @@ def get_page_with_scrapingdog(url, api_key):
     except requests.exceptions.RequestException as e:
         print(f"Error fetching URL {url} with Scrapingdog: {e}")
         return None
-# date wise parsing the jobs 
+
+# --- Parse posted date text like "30+ days ago" ---
 def parse_posted_date(text):
     today = datetime.today()
     text = text.lower()
@@ -39,13 +52,14 @@ def parse_posted_date(text):
             return today - timedelta(days=num_days)
         except:
             return None
-# main logic to scrape the jobs
+
+# --- Scrape job listings from Glassdoor ---
 def scrape_jobs():
     html_content = get_page_with_scrapingdog(TARGET_BASE_URL, SCRAPINGDOG_API_KEY)
     if not html_content:
         return pd.DataFrame()
 
-    bsobj = soup(html_content, 'lxml')  # making object of beautifulsoup to parse the xml/html doc.
+    bsobj = soup(html_content, 'lxml')
     job_cards = bsobj.find_all('li', class_='JobsList_jobListItem__wjTHv')
 
     jobs = []
@@ -58,7 +72,6 @@ def scrape_jobs():
         location = card.find('div', class_='JobCard_location__Ds1fM')
         salary = card.find('div', class_='JobCard_salaryEstimate__QpbTW')
 
-        # fetch posted text or day of post
         posted_text_tag = card.find('div', {'data-test': 'job-age'})
         posted_text = posted_text_tag.text.strip() if posted_text_tag else None
         post_date = parse_posted_date(posted_text) if posted_text else None
@@ -73,7 +86,8 @@ def scrape_jobs():
             "Posted Text": posted_text,
             "Post Date": post_date.strftime('%Y-%m-%d') if post_date else None,
             "Job Age": job_age,
-            "Job Description": "No description."
+            "Job Description": "No description.",
+            "Skills": "Not specified"
         }
 
         print(f"Fetching description for job: {job_link}")
@@ -84,12 +98,15 @@ def scrape_jobs():
                 desc = job_bs.find('div', class_='JobDetails_jobDescription__uW_fK')
                 description_text = desc.text.strip() if desc else ""
                 job_data["Job Description"] = description_text if description_text else "No description."
+                job_data["Skills"] = extract_skills(description_text)
+            else:
+                job_data["Skills"] = "Not specified"
 
         jobs.append(job_data)
 
     return pd.DataFrame(jobs)
 
-# --- Save New Jobs to CSV (Append only new) ---
+# --- Save new jobs to CSV ---
 def save_new_jobs_to_csv(new_df):
     os.makedirs(os.path.dirname(JOBS_CSV_PATH), exist_ok=True)
 
@@ -103,7 +120,7 @@ def save_new_jobs_to_csv(new_df):
         new_df.to_csv(JOBS_CSV_PATH, index=False)
         print(f"\nJobs saved to new file: {JOBS_CSV_PATH}")
 
-# --- Main Execution Flow ---
+# --- Main Execution ---
 if __name__ == "__main__":
     print("Scraping new job data...\n")
     scraped_df = scrape_jobs()
@@ -111,10 +128,10 @@ if __name__ == "__main__":
     if not scraped_df.empty:
         scraped_df["Post Date"] = pd.to_datetime(scraped_df["Post Date"], errors='coerce')
         latest_jobs = scraped_df.sort_values(by="Post Date", ascending=False).head(5)
-        # printing first 5 jobs posted 
+
         print(latest_jobs[[ 
-        "Job Title", "Company Name", "Location", "Salary",
-        "Posted Text", "Post Date", "Job Age", "Job Link", "Job Description"
+            "Job Title", "Company Name", "Location", "Salary",
+            "Posted Text", "Post Date", "Job Age", "Job Link", "Skills"
         ]].to_string(index=False))
 
         save_new_jobs_to_csv(scraped_df)
