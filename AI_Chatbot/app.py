@@ -27,7 +27,6 @@ MONGODB_COLLECTION = "information"
 #loading the api key
 from dotenv import load_dotenv
 load_dotenv()
-import os
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
@@ -69,19 +68,30 @@ def ask_gemini_flash(prompt, api_key=None):
     api_key = api_key or GEMINI_API_KEY
     if not api_key:
         return "Gemini API key missing."
+
+    restriction_prefix = (
+        "You are a specialized assistant for Indian ex-servicemen and defense-related queries only.\n"
+        "Only respond to questions about the Indian Army, Navy, Air Force, defense services, SPARSH portal, NDA (National Defence Academy), CDS, pensions, ECHS, resettlement, and other verified veteran-related topics.\n"
+        "If the query is unrelated to defense or ex-servicemen (e.g., sports, politics, entertainment, religion, general knowledge), strictly reply: 'Sorry, I can only assist with queries related to Indian ex-servicemen and defense matters.'\n"
+        "If the user asks for NDA and it clearly means National Defence Academy, provide details.\n"
+        "If it's ambiguous and not clearly defense-related, respond with the above restriction message.\n"
+        f"\nQuery: {prompt}"
+    )
+
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
     headers = {"Content-Type": "application/json"}
     params = {"key": api_key}
-    body = {"contents": [{"parts": [{"text": prompt}]}]}
+    body = {"contents": [{"parts": [{"text": restriction_prefix}]}]}
+
     try:
         response = requests.post(url, headers=headers, params=params, json=body, timeout=10)
         if response.ok:
             data = response.json()
-            # Extract the generated text from the response JSON
             return data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
         return "Gemini API error: " + response.text
     except Exception as e:
         return f"Gemini request failed: {e}"
+
 
 # Helper to detect if the query is about salaries
 def is_salary_query(prompt):
@@ -129,7 +139,7 @@ def initialize_vector_store():
 # Initialize the FLAN-T5 small model pipeline
 def initialize_flan_t5_model(model_name):
     global llm_model
-    if llm_model:
+    if llm_model:  # If the model has already been loaded once, it avoids reloading it again
         return llm_model
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -179,7 +189,7 @@ def is_job_related(prompt):
 
 # Check if query pertains to ex-servicemen info
 def is_ex_servicemen_info(prompt):
-    ex_keywords = ["ex-servicemen", "veteran", "retired", "army", "navy", "air force", "military", "defence"]
+    ex_keywords = ["retired officer", "veteran", "retired", "army", "navy", "air force", "military", "defence"]
     return any(word in prompt.lower() for word in ex_keywords)
 
 # Generate job-related response based on user query
@@ -194,13 +204,17 @@ def get_job_response(prompt=None):
         top_jobs = job_data_df.sort_values(by="Post Date", ascending=False).head(5)
         result_lines = []
         for _, row in top_jobs.iterrows():
-            line = f"🔹 **{row.get('Job Title', 'N/A')}** at *{row.get('Company Name', 'N/A')}* in {row.get('Location', 'N/A')}"
-            if pd.notna(row.get("Job Link")):
-                line += f" → [View Job]({row.get('Job Link')})"
+            title = row.get('Job Title', 'N/A')
+            company = row.get('Company Name', 'N/A')
+            location = row.get('Location', 'N/A')
+            salary = row.get('Salary', 'Not given')
+            link = row.get('Job Link', '')
+            line = f"🔹 **{title}** at *{company}* in {location} | 💰 {salary}"
+            if pd.notna(link):
+                line += f" → [View Job]({link})"
             result_lines.append(line)
         return "\n".join(result_lines)
 
-    # Filter jobs based on matched location and title keywords in prompt
     all_locations = job_data_df['Location'].dropna().unique()
     all_titles = job_data_df['Job Title'].dropna().unique()
 
@@ -216,30 +230,53 @@ def get_job_response(prompt=None):
         matched_jobs = matched_jobs[matched_jobs['Location'].apply(
             lambda x: any(l.lower() in str(x).lower() for l in matched_locations)
         )]
-    # Fallback to Gemini when job match fails
+
     if matched_jobs.empty:
         return ask_gemini_flash(prompt)
 
-    wants_description = any(k in prompt_lower for k in ["description"])
+    # Check if user explicitly asks for description
+    wants_description_only = (
+        "description" in prompt_lower and "job" in prompt_lower and
+        any(t.lower() in prompt_lower for t in matched_titles)
+    )
 
     result_lines = []
     for _, job in matched_jobs.iterrows():
         title = job.get('Job Title', 'N/A')
         company = job.get('Company Name', 'N/A')
         location = job.get('Location', 'N/A')
+        salary = job.get('Salary', 'Not given')
         link = job.get('Job Link', 'N/A')
-        full_desc = job.get("Job Description", "")
-        desc_part = str(full_desc).strip()
-        lines = []
-        if wants_description:
-            lines.append(f"🔹 **{title}** - 📝**Description:** {desc_part}")
+        description = str(job.get("Job Description", "")).strip()
+
+        if wants_description_only:
+            lines = [f"🔹**Job Title:** {title}", f"📝**Description:** {description}"]
+        elif matched_locations and not matched_titles:
+            # Location-only queries (no descriptions shown)
+            lines = [
+                f"🔹**Job Title:** {title}",
+                f"🏢**Company:** {company}",
+                f"💰**Salary:** {salary}",
+                f"📍**Location:** {location}"
+                
+            ]
         else:
-            lines.append(f"🔹**Job Title:** {title}\n 🏢**Company:** {company}\n 📍**Location:** {location}\n 🔗**Link:** {link}")
-            if desc_part:
-                lines.append(f"📝**Description:** {desc_part}")
+            # General full output
+            lines = [
+                f"🔹**Job Title:** {title}",
+                f"🏢**Company:** {company}",
+                f"💰**Salary:** {salary}",
+                f"📍**Location:** {location}",
+                f"🔗**Link:** {link}"
+            ]
+            if description:
+                lines.append(f"📝**Description:** {description}")
+
         result_lines.append("\n".join(lines))
 
     return "\n\n".join(result_lines)
+
+
 
 # Prepare the prompt template for LangChain QA
 def prepare_prompt(template):
@@ -259,7 +296,7 @@ def chat_endpoint():
     prompt_lower = user_input.lower()
 
     # Priority 1: If user question starts with "what is", "who is", or "tell me about", use Gemini
-    if prompt_lower.startswith(("what is", "who is", "tell me about")):
+    if prompt_lower.startswith(("what is", "who is", "tell me about","tell")):
         gemini_reply = ask_gemini_flash(user_input)
         return jsonify({"response": gemini_reply})
 
@@ -289,19 +326,31 @@ def chat_endpoint():
             possible_locations = [
                 "punjab", "delhi", "maharashtra", "uttar pradesh", "kerala", "jamshedpur",
                 "haryana", "gujarat", "karnataka", "rajasthan", "bihar", "madhya pradesh",
-                "telangana", "andhra pradesh", "tamil nadu", "jammu", "kashmir", "srinagar"
+                "telangana", "andhra pradesh", "tamil nadu", "jammu", "kashmir", "srinagar",
+                "ahmedabad", "bangalore", "bhopal", "chandigarh", "chennai", "dehradun",
+                "guwahati", "hyderabad", "jaipur", "kolkata", "lucknow", "mumbai",
+                "nagpur", "patna", "pune", "ranchi", "shimla", "thiruvananthapuram"
             ]
             possible_ranks = [
-                "sepoy", "naik", "havildar", "subedar", "subedar major", 
-                "lieutenant", "captain", "major", "colonel", "brigadier"
+                "major", "colonel", "brigadier",
+                "any", "captain", "havildar", "jco", "lieutenant", "lt colonel",
+                "naik", "officer cadet", "sepoy", "subedar","subedar major"
+            ]
+
+            possible_educations = [
+            "10th", "12th", "diploma", "graduate", "graduation", "bachelor", "postgraduate",
+            "pg", "btech", "mtech", "mba", "phd", "ba", "ma", "bcom", "mcom", "bsc", "msc"
             ]
             # Add regex filters if location or rank found in query
             matched_location = next((loc for loc in possible_locations if loc in user_input_lower), None)
             matched_rank = next((rk for rk in possible_ranks if rk in user_input_lower), None)
+            matched_education = next((edu for edu in possible_educations if edu in user_input_lower), None)
             if matched_location:
                 search_query["location"] = {"$regex": matched_location, "$options": "i"}
             if matched_rank:
                 search_query["rank"] = {"$regex": matched_rank, "$options": "i"}
+            if matched_education:
+                search_query["education"] = {"$regex": matched_education, "$options": "i"}
 
             results = mongo_collection.find(
                 search_query,
@@ -344,7 +393,7 @@ def chat_endpoint():
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm_model,
             chain_type="stuff",
-            retriever=our_knowledge_base.as_retriever(search_kwargs={'k': 3}),
+            retriever=our_knowledge_base.as_retriever(search_kwargs={'k': 5}),
             return_source_documents=True,
             chain_type_kwargs={"prompt": prepare_prompt(PROMPT_TEMPLATE)}
         )
