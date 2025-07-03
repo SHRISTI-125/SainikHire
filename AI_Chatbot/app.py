@@ -200,7 +200,7 @@ def get_job_response(prompt=None):
     prompt_lower = prompt.lower() if prompt else ""
 
     # If user requests recent or top jobs, sort and return top 5
-    if any(term in prompt_lower for term in ["latest jobs", "top jobs", "recent jobs", "5 jobs"]):
+    if any(term in prompt_lower for term in ["latest jobs", "top jobs", "recent jobs", "5 jobs", "recent job opening"]):
         top_jobs = job_data_df.sort_values(by="Post Date", ascending=False).head(5)
         result_lines = []
         for _, row in top_jobs.iterrows():
@@ -240,26 +240,45 @@ def get_job_response(prompt=None):
         any(t.lower() in prompt_lower for t in matched_titles)
     )
 
+    show_only_summary = (
+        any(keyword in prompt_lower for keyword in ["job opening", "job in", "all jobs", "looking for"]) and
+        not wants_description_only
+    )
+
     result_lines = []
+    
+    # Extract keyword from prompt for filtering summary
+    keyword_words = set(prompt_lower.split())
+
     for _, job in matched_jobs.iterrows():
         title = job.get('Job Title', 'N/A')
         company = job.get('Company Name', 'N/A')
         location = job.get('Location', 'N/A')
         salary = job.get('Salary', 'Not given')
         link = job.get('Job Link', 'N/A')
+        post_date = job.get('Post Date', 'Unknown')
         description = str(job.get("Job Description", "")).strip()
 
         if wants_description_only:
-            lines = [f"🔹**Job Title:** {title}", f"📝**Description:** {description}"]
+            lines = [f"🔹**Job Title:** {title}", f"🗓️**Post Date:** {post_date}", f"📝**Description:** {description}"]
         elif matched_locations and not matched_titles:
             # Location-only queries (no descriptions shown)
+            post_date = job.get('Post Date', 'Unknown')
+
             lines = [
                 f"🔹**Job Title:** {title}",
                 f"🏢**Company:** {company}",
                 f"💰**Salary:** {salary}",
-                f"📍**Location:** {location}"
-                
+                f"📍**Location:** {location}",
+                f"🔗**Link:** {link}",
+                f"🗓️**Post Date:** {post_date}"
             ]
+        elif show_only_summary:
+            lines = [
+                f"🔹**Job Title:** {title}",
+                f"🔗**Link:** {link}"    
+            ]
+
         else:
             # General full output
             lines = [
@@ -267,7 +286,8 @@ def get_job_response(prompt=None):
                 f"🏢**Company:** {company}",
                 f"💰**Salary:** {salary}",
                 f"📍**Location:** {location}",
-                f"🔗**Link:** {link}"
+                f"🔗**Link:** {link}",
+                f"🗓️**Post Date:** {post_date}"
             ]
             if description:
                 lines.append(f"📝**Description:** {description}")
@@ -275,8 +295,6 @@ def get_job_response(prompt=None):
         result_lines.append("\n".join(lines))
 
     return "\n\n".join(result_lines)
-
-
 
 # Prepare the prompt template for LangChain QA
 def prepare_prompt(template):
@@ -338,8 +356,8 @@ def chat_endpoint():
             ]
 
             possible_educations = [
-            "10th", "12th", "diploma", "graduate", "graduation", "bachelor", "postgraduate",
-            "pg", "btech", "mtech", "mba", "phd", "ba", "ma", "bcom", "mcom", "bsc", "msc"
+            "10th", "12th", "diploma", "graduate", "graduation", "bachelor", "postgraduate", "10th pass", "12th pass",
+            "pg", "btech", "mtech", "mba", "phd", "ba", "ma", "bcom", "mcom", "bsc", "msc","ug", "iti"
             ]
             # Add regex filters if location or rank found in query
             matched_location = next((loc for loc in possible_locations if loc in user_input_lower), None)
