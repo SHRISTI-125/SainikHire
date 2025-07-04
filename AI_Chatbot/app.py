@@ -70,13 +70,28 @@ def ask_gemini_flash(prompt, api_key=None):
         return "Gemini API key missing."
 
     restriction_prefix = (
-        "You are a specialized assistant for Indian ex-servicemen and defense-related queries only.\n"
-        "Only respond to questions about the Indian Army, Navy, Air Force, defense services, SPARSH portal, NDA (National Defence Academy), CDS, pensions, ECHS, resettlement, and other verified veteran-related topics.\n"
-        "If the query is unrelated to defense or ex-servicemen (e.g., sports, politics, entertainment, religion, general knowledge), strictly reply: 'Sorry, I can only assist with queries related to Indian ex-servicemen and defense matters.'\n"
-        "If the user asks for NDA and it clearly means National Defence Academy, provide details.\n"
-        "If it's ambiguous and not clearly defense-related, respond with the above restriction message.\n"
-        f"\nQuery: {prompt}"
+    "You are a dedicated assistant for Indian ex-servicemen and veteran-related matters.\n"
+    "This assistant is built specifically for ex-servicemen, so assume every user query is related to the Indian defense background — even if the word 'ex-serviceman' is not mentioned.\n\n"
+    "You must respond confidently to:\n"
+    "- Job-related queries (openings, resettlement, AWPO, DGR, placement support)\n"
+    "- Welfare schemes, SPARSH portal, ECHS, pensions, AFD online store\n"
+    "- Exams and institutions like NDA, CDS, SSB\n"
+    "- Defense documentation, ID cards, benefits, quota in education or jobs\n"
+    "- Anything involving the Indian Army, Navy, Air Force, or Ministry of Defence\n\n"
+    "You must correctly interpret short forms or abbreviations in defense context:\n"
+    "- 'NDA' = National Defence Academy\n"
+    "- 'AWPO' = Army Welfare Placement Organisation\n"
+    "- 'DGR' = Directorate General Resettlement\n"
+    "- 'ECHS' = Ex-Servicemen Contributory Health Scheme\n"
+    "- 'SPARSH' = Pension system for defense pensioners\n"
+    "- 'AFD' = Armed Forces CSD Canteen Store Department portal\n"
+    "If users write abbreviations like 'a w p o', or lowercase like 'echs', still understand the correct meaning.\n\n"
+    "Only if the query is completely unrelated to defense or veterans — such as about celebrities, general trivia, entertainment, politics, or religion — then politely respond with:\n"
+    "'Sorry, I can only assist with queries related to Indian ex-servicemen, defense services, or veteran affairs.'\n\n"
+    f"User Query: {prompt}"
     )
+
+
 
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
     headers = {"Content-Type": "application/json"}
@@ -105,7 +120,7 @@ def initialize_mongodb():
         mongo_client = MongoClient(MONGODB_URI)
         mongo_db = mongo_client[MONGODB_DBNAME]
         mongo_collection = mongo_db[MONGODB_COLLECTION]
-        print("✅ MongoDB connected successfully.")
+        print("MongoDB connected successfully.")
         # Create text index to support full-text search on important fields
         mongo_collection.create_index([
             ("title", "text"),
@@ -117,7 +132,7 @@ def initialize_mongodb():
         print("Text index created/verified on MongoDB collection.")
         print(mongo_collection.index_information())
     except Exception as e:
-        print(f"❌ Failed to connect to MongoDB: {e}")
+        print(f"Failed to connect to MongoDB: {e}")
         mongo_client = None
         mongo_collection = None
 
@@ -241,14 +256,44 @@ def get_job_response(prompt=None):
     )
 
     show_only_summary = (
-        any(keyword in prompt_lower for keyword in ["job opening", "job in", "all jobs", "looking for"]) and
+        any(keyword in prompt_lower for keyword in ["job openings", "jobs in", "all jobs", "looking for"]) and
         not wants_description_only
     )
 
-    result_lines = []
+    # Helper function to filter by field keywords
+    def filter_by_field_keyword(prompt, jobs_df):
+        field_keywords = [
+            "logistics", "supply chain", "warehouse", "inventory", "store", "distribution",
+            "fleet", "transport", "driver", "material", "shipping", "procurement", "dispatch",
+            "operations", "operation", "admin", "administrative", "compliance", "training",
+            "security", "patrol", "fire", "defense", "surveillance", "guard", "supervisor",
+            "monitoring", "control room", "emergency", "safety", "safety officer", "coordinator","executive"
+        ]
+
+        prompt = prompt.lower()
+        matched_keywords = [kw for kw in field_keywords if kw in prompt]
+
+        if matched_keywords:
+            pattern = "|".join(matched_keywords)
+            return jobs_df[jobs_df["Job Title"].str.lower().str.contains(pattern, na=False)]
+        return jobs_df
+
+
+    # Apply field-based filtering only if summary is requested
+    if show_only_summary:
+        matched_jobs = filter_by_field_keyword(prompt, matched_jobs)
+        matched_jobs["Job Title"] = matched_jobs["Job Title"].astype(str).str.strip().str.lower()
+        matched_jobs["Job Link"] = matched_jobs["Job Link"].astype(str).str.strip()
+        matched_jobs = matched_jobs.drop_duplicates(subset=["Job Title", "Job Link"]).reset_index(drop=True)
     
-    # Extract keyword from prompt for filtering summary
-    keyword_words = set(prompt_lower.split())
+        # If after filtering, jobs are empty then call Gemini
+        if matched_jobs.empty:
+            return "Sorry, no relevant job found in our data.\n\n" + ask_gemini_flash(prompt)
+
+
+
+    # Final formatting loop
+    result_lines = []
 
     for _, job in matched_jobs.iterrows():
         title = job.get('Job Title', 'N/A')
@@ -260,11 +305,13 @@ def get_job_response(prompt=None):
         description = str(job.get("Job Description", "")).strip()
 
         if wants_description_only:
-            lines = [f"🔹**Job Title:** {title}", f"🗓️**Post Date:** {post_date}", f"📝**Description:** {description}"]
-        elif matched_locations and not matched_titles:
-            # Location-only queries (no descriptions shown)
-            post_date = job.get('Post Date', 'Unknown')
+            lines = [
+                f"🔹**Job Title:** {title}",
+                f"🗓️**Post Date:** {post_date}",
+                f"📝**Description:** {description}"
+            ]
 
+        elif matched_locations and not matched_titles:
             lines = [
                 f"🔹**Job Title:** {title}",
                 f"🏢**Company:** {company}",
@@ -273,14 +320,15 @@ def get_job_response(prompt=None):
                 f"🔗**Link:** {link}",
                 f"🗓️**Post Date:** {post_date}"
             ]
+
         elif show_only_summary:
             lines = [
                 f"🔹**Job Title:** {title}",
-                f"🔗**Link:** {link}"    
+                f"🔗**Link:** {link}",
+                f"🗓️**Post Date:** {post_date}"
             ]
 
         else:
-            # General full output
             lines = [
                 f"🔹**Job Title:** {title}",
                 f"🏢**Company:** {company}",
@@ -311,7 +359,8 @@ def chat_endpoint():
     if not user_input:
         return jsonify({"error": "Prompt missing from request."}), 400
 
-    prompt_lower = user_input.lower()
+    prompt_lower = user_input.lower()  
+
 
     # Priority 1: If user question starts with "what is", "who is", or "tell me about", use Gemini
     if prompt_lower.startswith(("what is", "who is", "tell me about","tell")):
