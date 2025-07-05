@@ -121,7 +121,7 @@ def scrape_jobs():
             "Job Age": job_age,
             "Job Description": "No description.",
             "Last Date to Apply": None,
-            "Expired": None
+            "Expiry": None
         }
 
         print(f"Fetching description for job: {job_link}")
@@ -137,7 +137,7 @@ def scrape_jobs():
                 if not job_data["Last Date to Apply"] and post_date:
                     computed_last_date, is_expired = compute_last_date_and_expiry(post_date)
                     job_data["Last Date to Apply"] = computed_last_date
-                    job_data["Expired"] = is_expired
+                    job_data["Expiry"] = is_expired
 
         jobs.append(job_data)
 
