@@ -2,9 +2,10 @@ import pandas as pd
 from datetime import datetime
 
 def update_expiry_status(csv_file_path):
-    # Tell pandas to parse 'Last Date to Apply' as dates
-    df = pd.read_csv(csv_file_path, parse_dates=['Last Date to Apply'])
+    df = pd.read_csv(csv_file_path)
 
+    # Convert to datetime
+    df['Last Date to Apply'] = pd.to_datetime(df['Last Date to Apply'], errors='coerce')
     today = pd.Timestamp.today()
 
     def check_expiry(date_val):
@@ -19,6 +20,3 @@ def update_expiry_status(csv_file_path):
 
     df.to_csv(csv_file_path, index=False)
     print("Expiry status updated successfully.")
-
-if __name__ == "__main__":
-    update_expiry_status('data/jobs.csv')
