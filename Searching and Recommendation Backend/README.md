@@ -2,10 +2,14 @@
 <pre>  
 ├── Search and Recommendation Backend/
 │   ├── app.py
+│   ├── data_deletion.py
+│   ├── email_sending.py
 │   ├── jobForm.py
 │   ├── match_job.py
 │   ├── recommend_job_logic.py
 │   ├── signupForm.py
+│   ├── updating_database.py
+│   ├── updating_from_dgr.py
 │   └── requirements.txt
 </pre>
 
