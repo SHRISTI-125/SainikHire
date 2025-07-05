@@ -24,22 +24,40 @@ def get_page_with_scrapingdog(url, api_key):
         print(f"Error fetching URL {url} with Scrapingdog: {e}")
         return None
 
-# --- Helper function to parse "posted x days ago" text ---
-def parse_posted_date(text):
-    today = datetime.today()
-    text = text.lower()
-    if "today" in text or "just posted" in text:
-        return today
-    elif "1 day ago" in text:
-        return today - timedelta(days=1)
-    elif "30+" in text or "30d+" in text:
-        return today - timedelta(days=30)
-    else:
-        try:
-            num_days = int(''.join(filter(str.isdigit, text)))
-            return today - timedelta(days=num_days)
-        except:
-            return None
+# --- Updated parse_posted_date function ---
+def parse_posted_date(text, today=None):
+    if not text:
+        return None
+    if not today:
+        today = datetime.today()
+
+    text = text.lower().strip()
+    try:
+        if "today" in text or "just posted" in text or "24h" in text:
+            return today
+        elif "1 day ago" in text:
+            return today - timedelta(days=1)
+        elif "30+" in text or "30d+" in text:
+            return today - timedelta(days=30)
+        elif re.search(r"\d+\s*d", text):  # e.g., '5d', '12d'
+            num = int(re.search(r"\d+", text).group())
+            return today - timedelta(days=num)
+        elif re.search(r"\d+\s*day", text):  # e.g., '5 days ago'
+            num = int(re.search(r"\d+", text).group())
+            return today - timedelta(days=num)
+        elif "week" in text:
+            num = int(re.search(r"\d+", text).group())
+            return today - timedelta(weeks=num)
+        elif "month" in text:
+            num = int(re.search(r"\d+", text).group())
+            return today - timedelta(days=30 * num)
+        elif "on" in text:
+            match = re.search(r'on\s+([A-Za-z]+\s+\d{1,2})', text)
+            if match:
+                return datetime.strptime(match.group(1) + f' {today.year}', "%B %d %Y")
+    except Exception as e:
+        print(f"Date parsing failed for text: {text} → {e}")
+    return None
 
 # --- Helper: Calculate Last Date to Apply as Post Date + 30 days ---
 def compute_last_date_and_expiry(post_date):
@@ -54,6 +72,15 @@ def compute_last_date_and_expiry(post_date):
 
 # --- Main job scraping logic ---
 def scrape_jobs():
+    # Load already scraped jobs data (links and post dates)
+    if os.path.exists(JOBS_CSV_PATH):
+        old_df = pd.read_csv(JOBS_CSV_PATH)
+        existing_links = set(old_df["Job Link"].dropna())
+        link_to_post_date = dict(zip(old_df["Job Link"], old_df["Post Date"]))
+    else:
+        existing_links = set()
+        link_to_post_date = {}
+
     html_content = get_page_with_scrapingdog(TARGET_BASE_URL, SCRAPINGDOG_API_KEY)
     if not html_content:
         return pd.DataFrame()
@@ -67,12 +94,20 @@ def scrape_jobs():
         title_tag = card.find('a', class_='JobCard_jobTitle__GLyJ1')
         job_title = title_tag.text.strip() if title_tag else None
         job_link = title_tag['href'] if title_tag and title_tag.has_attr('href') else None
+
         company = card.find('div', class_='EmployerProfile_profileContainer__63w3R')
         location = card.find('div', class_='JobCard_location__Ds1fM')
         salary = card.find('div', class_='JobCard_salaryEstimate__QpbTW')
         posted_text_tag = card.find('div', {'data-test': 'job-age'})
         posted_text = posted_text_tag.text.strip() if posted_text_tag else None
-        post_date = parse_posted_date(posted_text) if posted_text else None
+
+        # Use existing post_date if job_link already scraped, else parse new
+        if job_link in link_to_post_date:
+            post_date_str = link_to_post_date[job_link]
+            post_date = pd.to_datetime(post_date_str, errors='coerce')
+        else:
+            post_date = parse_posted_date(posted_text)
+
         job_age = (datetime.today() - post_date).days if post_date else None
 
         job_data = {
@@ -85,9 +120,8 @@ def scrape_jobs():
             "Post Date": post_date.strftime('%Y-%m-%d') if post_date else None,
             "Job Age": job_age,
             "Job Description": "No description.",
-            "Last Date to Apply": None,  # Temporary placeholder
-            "Expired": None  # New column
-
+            "Last Date to Apply": None,
+            "Expired": None
         }
 
         print(f"Fetching description for job: {job_link}")
@@ -133,15 +167,15 @@ if __name__ == "__main__":
         latest_jobs = scraped_df.sort_values(by="Post Date", ascending=False).head(5)
 
         print("\nLatest Jobs:\n")
-        print(latest_jobs[[ 
-            "Job Title", "Company Name", "Location", "Salary", 
+        print(latest_jobs[[
+            "Job Title", "Company Name", "Location", "Salary",
             "Posted Text", "Post Date", "Job Age", "Last Date to Apply",
             "Job Link", "Job Description"
         ]].to_string(index=False))
 
         save_new_jobs_to_csv(scraped_df)
-        
-        # Call expiry status updater
+
+        # Call expiry status updater (assuming you have this in CheckExpiry.py)
         from CheckExpiry import update_expiry_status
         update_expiry_status(JOBS_CSV_PATH)
 
