@@ -297,45 +297,53 @@ def get_job_response(prompt=None):
 
     for _, job in matched_jobs.iterrows():
         title = job.get('Job Title', 'N/A')
+        expiry_status = job.get('Expiry', 'Unknown')  # e.g. "Expired" or "Available"
+        status_label = f"[❌ Expired]" if expiry_status.lower() == "expired" else f"[✅ Available]"
+        job_title_with_status = f"{title} {status_label}"
         company = job.get('Company Name', 'N/A')
         location = job.get('Location', 'N/A')
         salary = job.get('Salary', 'Not given')
         link = job.get('Job Link', 'N/A')
-        post_date = job.get('Post Date', 'Unknown')
+        #post_date = job.get('Post Date', 'Unknown')
+        last_date = job.get('Last Date to Apply', 'Unknown')
         description = str(job.get("Job Description", "")).strip()
 
         if wants_description_only:
             lines = [
-                f"🔹**Job Title:** {title}",
-                f"🗓️**Post Date:** {post_date}",
+                f"🔹**Job Title:** {job_title_with_status}",
+              # f"🗓️**Post Date:** {post_date}",
+                f"📅**Last Date to Apply:** {last_date}",
                 f"📝**Description:** {description}"
             ]
 
         elif matched_locations and not matched_titles:
             lines = [
-                f"🔹**Job Title:** {title}",
+                f"🔹**Job Title:** {job_title_with_status}",
                 f"🏢**Company:** {company}",
                 f"💰**Salary:** {salary}",
                 f"📍**Location:** {location}",
                 f"🔗**Link:** {link}",
-                f"🗓️**Post Date:** {post_date}"
+                #f"🗓️**Post Date:** {post_date}",
+                f"📅**Last Date to Apply:** {last_date}"
             ]
 
         elif show_only_summary:
             lines = [
-                f"🔹**Job Title:** {title}",
+                f"🔹**Job Title:** {job_title_with_status}",
                 f"🔗**Link:** {link}",
-                f"🗓️**Post Date:** {post_date}"
+               # f"🗓️**Post Date:** {post_date}",
+                f"📅**Last Date to Apply:** {last_date}"
             ]
 
         else:
             lines = [
-                f"🔹**Job Title:** {title}",
+                f"🔹**Job Title:** {job_title_with_status}",
                 f"🏢**Company:** {company}",
                 f"💰**Salary:** {salary}",
                 f"📍**Location:** {location}",
                 f"🔗**Link:** {link}",
-                f"🗓️**Post Date:** {post_date}"
+                #f"🗓️**Post Date:** {post_date}",
+                f"📅**Last Date to Apply:** {last_date}"
             ]
             if description:
                 lines.append(f"📝**Description:** {description}")
@@ -460,7 +468,7 @@ def chat_endpoint():
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm_model,
             chain_type="stuff",
-            retriever=our_knowledge_base.as_retriever(search_kwargs={'k': 5}),
+            retriever=our_knowledge_base.as_retriever(search_kwargs={'k': 4}),
             return_source_documents=True,
             chain_type_kwargs={"prompt": prepare_prompt(PROMPT_TEMPLATE)}
         )
