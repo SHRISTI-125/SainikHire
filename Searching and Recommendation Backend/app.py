@@ -9,13 +9,17 @@ from match_job import match_job
 from recommend_job_logic import recommend_jobs_logic
 from signupForm import signup
 from jobForm import jobupdate
+from data_deletion import delete_expired_jobs
+from email_sending import send_job_reminders
+from updating_database import updateJobs
+from updating_from_dgr import extracted_jobs
 
 app = Flask(__name__)
 CORS(app) 
 
 client = MongoClient("mongodb://localhost:27017/")
 db = client["SainikHire"]
-collection = db["info"]
+collection = db["database1"]
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
