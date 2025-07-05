@@ -17,6 +17,7 @@ SanikHire offers a streamlined and user-friendly experience for ex-servicemen to
   <li>📄<b> CV Generator</b> – Automatically generates professional CVs based on user inputs.</li>
   <li>💬<b> Chatbot Assistant</b> – Provides answer to queries related to jobs and app.</li>
   <li>🤖<b> Job Recommendation System</b> – Provides personalized job suggestions based on user profiles and skills.</li>
+  <li>📧 <b>Email Notifications</b> – Sends timely emails for upcoming deadlines and important job alerts</li>
 </ul>
 
 
