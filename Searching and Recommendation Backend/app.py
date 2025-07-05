@@ -74,6 +74,17 @@ def allJob():
         job["_id"] = str(job["_id"]) 
     return jsonify(data)
 
+#deleting cross last date data
+delete_expired_jobs();
+
+# sending remainder
+send_job_reminders();
+
+#updating database every hour, through web scrapping from ncs portal
+updateJobs()
+
+#updating database in one day from dgr website
+extracted_jobs()
 
 if __name__ == "__main__":
     app.run(debug=True)
