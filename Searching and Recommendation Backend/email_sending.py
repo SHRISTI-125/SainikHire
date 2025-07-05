@@ -37,7 +37,7 @@ def send_job_reminders():
     # summary
     job_lines = []
     for job in upcoming_jobs:
-        job_lines.append(f"{job['title']} - Last Date: {job['last_date']}\nLink: {job.get('link', 'http://localhost:5173/')}\n")
+        job_lines.append(f"{job['title']} - Last Date: {job['last_date']}\nLink: {job.get('apply_link', 'http://localhost:5173/')}\n")
 
     job_summary = "\n".join(job_lines)
 
