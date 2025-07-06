@@ -1,4 +1,6 @@
-<h1>SanikHire</h1>
+<h1>SanikHire: AI Search Engine for
+employment opportunity of Ex-Servicemen 
+</h1>
 </center>
 <h2>📌 Overview</h2>
 <p>
