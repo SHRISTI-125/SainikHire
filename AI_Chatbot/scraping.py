@@ -104,7 +104,7 @@ def scrape_jobs():
         # Use existing post_date if job_link already scraped, else parse new
         if job_link in link_to_post_date:
             post_date_str = link_to_post_date[job_link]
-            post_date = pd.to_datetime(post_date_str, errors='coerce')
+            post_date = pd.to_datetime(post_date_str, format='%Y-%m-%d', errors='coerce')
         else:
             post_date = parse_posted_date(posted_text)
 
