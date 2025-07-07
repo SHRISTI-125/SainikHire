@@ -8,7 +8,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
 # Note: The following imports are for your chatbot's generation part,
-# not strictly for creating embeddings, but kept as per your original file structure.
+# not strictly for creating embeddings
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 from langchain_huggingface import HuggingFacePipeline
 from langchain_core.prompts import PromptTemplate
