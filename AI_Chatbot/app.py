@@ -91,8 +91,6 @@ def ask_gemini_flash(prompt, api_key=None):
     f"User Query: {prompt}"
     )
 
-
-
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
     headers = {"Content-Type": "application/json"}
     params = {"key": api_key}
@@ -108,7 +106,7 @@ def ask_gemini_flash(prompt, api_key=None):
         return f"Gemini request failed: {e}"
 
 
-# Helper to detect if the query is about salaries
+# Helper function to detect if the query is about salaries
 def is_salary_query(prompt):
     keywords = ["salary", "pay", "monthly salary", "ctc", "package", "income", "expected salary", "expected pay"]
     return any(kw in prompt.lower() for kw in keywords)
@@ -121,13 +119,20 @@ def initialize_mongodb():
         mongo_db = mongo_client[MONGODB_DBNAME]
         mongo_collection = mongo_db[MONGODB_COLLECTION]
         print("MongoDB connected successfully.")
+        existing_indexes = mongo_collection.index_information()
+        for name, info in existing_indexes.items():
+            if info.get("weights"):
+                print(f"Dropping existing text index: {name}")
+                mongo_collection.drop_index(name)
         # Create text index to support full-text search on important fields
         mongo_collection.create_index([
             ("title", "text"),
             ("description", "text"),
+            ("skills", "text"),
             ("location", "text"),
             ("rank", "text"),
-            ("education", "text")
+            ("education", "text"),
+            ("last_date", "text")
         ])
         print("Text index created/verified on MongoDB collection.")
         print(mongo_collection.index_information())
@@ -291,7 +296,6 @@ def get_job_response(prompt=None):
             return "Sorry, no relevant job found in our data.\n\n" + ask_gemini_flash(prompt)
 
 
-
     # Final formatting loop
     result_lines = []
 
@@ -436,16 +440,20 @@ def chat_endpoint():
             for doc in results:
                 title = doc.get("title", "No Title")
                 desc = doc.get("description", "No Description")
+                skills = doc.get("skills", "Skills not mentioned")
                 rank = doc.get("rank", "Rank not available")
                 location = doc.get("location", "Location unknown")
                 education = doc.get("education", "Education not listed")
+                last_date = doc.get("last_date", "Last date not available")
 
                 response_lines.append(
                     f"🔹 **{title}**\n"
                     f"- 🏅 Rank: {rank}\n"
                     f"- 📍 Location: {location}\n"
                     f"- 🎓 Education: {education}\n"
-                    f"- 📜 Description: {desc}"
+                    f"- 📜 Description: {desc}\n"
+                    f"- 🛠️ Skills: {skills}\n"
+                    f"- 🗓️ Last Date to Apply: {last_date}"
                 )
 
             if response_lines:
