@@ -1,5 +1,5 @@
 import os
-import re
+import re # used for pattern matching
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup as soup
@@ -24,7 +24,7 @@ def get_page_with_scrapingdog(url, api_key):
         print(f"Error fetching URL {url} with Scrapingdog: {e}")
         return None
 
-# --- Updated parse_posted_date function ---
+# --- parse_posted_date function ---
 def parse_posted_date(text, today=None):
     if not text:
         return None
@@ -59,7 +59,7 @@ def parse_posted_date(text, today=None):
         print(f"Date parsing failed for text: {text} → {e}")
     return None
 
-# --- Helper: Calculate Last Date to Apply as Post Date + 30 days ---
+# --- Helper function : Calculate Last Date to Apply as Post Date + 30 days ---
 def compute_last_date_and_expiry(post_date):
     if not post_date:
         return None, None
@@ -175,7 +175,7 @@ if __name__ == "__main__":
 
         save_new_jobs_to_csv(scraped_df)
 
-        # Call expiry status updater (assuming you have this in CheckExpiry.py)
+        # Call expiry status updater 
         from CheckExpiry import update_expiry_status
         update_expiry_status(JOBS_CSV_PATH)
 
