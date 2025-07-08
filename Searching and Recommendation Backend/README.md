@@ -1,3 +1,19 @@
+# SainikHire – Backend (Searching, Recommendation, Email)
+
+Built with:
+- Flask for Backend 
+- MongoDB for Database
+- Selenium and BeautifulSoup for Web Scraping
+- SentenceTransformer for Semantic Search
+
+##  Features
+-  Semantically job matching using SentenceTransformer
+-  Recommends job based on profile
+-  Email reminders for job deadlines before 5 days
+-  Daily scraping from [NCS](https://www.ncs.gov.in) and [DGR](https://dgrindia.gov.in)
+-  Automatic deletion of expired jobs
+
+
 # Project Structure
 <pre>  
 ├── Search and Recommendation Backend/
