@@ -18,15 +18,15 @@ users_col = db["new_user"]
 jobs_col = db["database1"]
 
 def send_job_reminders():
-    print(f"[{datetime.now()}] Loading!")
+    print(f"Today is : [{datetime.now()}]") 
 
     today = datetime.now().date()
-    cutoff = today + timedelta(days=5)
+    time_left = today + timedelta(days=5) # job ending in 5 days
 
     upcoming_jobs = list(jobs_col.find({
         "last_date": {
             "$gte": today.strftime('%Y-%m-%d'),
-            "$lte": cutoff.strftime('%Y-%m-%d')
+            "$lte": time_left.strftime('%Y-%m-%d')
         }
     }))
 
@@ -39,13 +39,13 @@ def send_job_reminders():
     for job in upcoming_jobs:
         job_lines.append(f"{job['title']} - Last Date: {job['last_date']}\nLink: {job.get('apply_link', 'http://localhost:5173/')}\n")
 
-    job_summary = "\n".join(job_lines)
+    total_job = "\n".join(job_lines)
 
     subject = "Upcoming Job Deadlines within Next 5 Days"
     body = f"""Hi there,
-    
     Here are some jobs whose last dates are coming soon, apply as soon as possible
-    {job_summary}
+    
+    {total_job}
     
     Regards,
     SainikHire
@@ -64,12 +64,13 @@ def send_job_reminders():
             smtp.send_message(msg)
             print(f"Sent to: {email}")
 
-send_job_reminders() 
+#send_job_reminders() 
 #schedule.every(1).days.do()
 
 #print("Scheduler started. Waiting to send reminders every 1 days...")
 
 def run_scheduler():
+    send_job_reminders() 
     schedule.every(1).days.do(send_job_reminders)
     while True:
         schedule.run_pending()
