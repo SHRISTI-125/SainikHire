@@ -7,7 +7,7 @@ function AllJobs() {
   const [error, setError] = useState(null);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const jobsPerPage = 15;
+  const jobsPerPage = 10;
 
   useEffect(() => {
     const fetchJobs = async () => {
