@@ -33,14 +33,17 @@ def signup():
 
 
 # routing recommendation logic
+# recommender model
+recommender_model = SentenceTransformer('all-mpnet-base-v2') #because of high accuracy
 @app.route("/recommend", methods=["POST"])
 def recommend_jobs():
     data = request.get_json()
     user_input = data.get("user_input", "")
+    user_input = "I have experince in"+user_input
     if not user_input:
         return jsonify([])
 
-    results = recommend_jobs_logic(user_input, db, model, collection)
+    results = recommend_jobs_logic(user_input, db, recommender_model, collection)
     return jsonify(results)
 
 
