@@ -8,7 +8,7 @@ def clean_optimize(prompt):
 #embedding skills
 def skill_embedding(skills):
     add = ', '.join(skills)
-    return f"These are the skills {add} required for current role"
+    return f"We are looking for a person skilled in {add} to work in our company."
 
 #20% weightage to keywords
 def keyword_overlap_boost(user_skills, job_skills):
