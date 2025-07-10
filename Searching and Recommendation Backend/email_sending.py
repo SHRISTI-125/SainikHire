@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 import time
 import threading
 from sklearn.metrics.pairwise import cosine_similarity
+from sentence_transformers import SentenceTransformer
+import numpy as np
 
 password=password()
 # Email 
@@ -45,19 +47,23 @@ def send_job_reminders():
         job_last_date = job['last_date']
         job_skill_text = job.get('skills', []) 
 
+        job_skills_list = job.get('skills', [])
+        job_skill_text = " ".join(job_skills_list)  
         job_embedding = model.encode(job_skill_text, convert_to_tensor=False) #converting job skills into embedding
 
         matching_users = []
 
         for user in users_col.find():
             user_email = user.get('email')
-            user_skills = user.get('skills', [])
+            user_skills_list = user.get('skills', [])
+            
+            user_skill_text = " ".join(user_skills_list)
+            user_embedding = model.encode(user_skill_text, convert_to_tensor=False)
 
-            if not user_email or not user_skills:
-                continue
+            user_embedding = np.array(user_embedding).reshape(1, -1)
+            job_embedding = np.array(job_embedding).reshape(1, -1)
 
-            user_embedding = model.encode(user_skills, convert_to_tensor=False) #converting user skills into embedding
-            similarity = cosine_similarity([user_embedding], [job_embedding])[0][0] #finding similarity
+            similarity = cosine_similarity(user_embedding, job_embedding)[0][0] #finding similarity
 
             if similarity >= 0.4:  #if more similar then; take user's email with message
                 matching_users.append(user_email)
@@ -70,8 +76,6 @@ def send_job_reminders():
             print(f"No matching users for job: {job_title}")
             continue
             
-
-    total_job = "\n".join(job_lines)
 
     subject = "Upcoming Job Deadlines within Next 5 Days"
 #body = f"""Hi there,
@@ -89,10 +93,11 @@ def send_job_reminders():
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
         smtp.login(SENDER_EMAIL, APP_PASSWORD)
         for email,job_list in userupdating_recommendations.items():
+            list_of_jobs = "\n".join(job_list)
             body = f"""Hi There,
             The following jobs matched your skills and are ending in next 5 days.
             
-            {"\n".join(job_list)}
+            {list_of_jobs}
             
             Apply now!
 
