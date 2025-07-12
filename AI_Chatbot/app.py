@@ -19,7 +19,7 @@ app = Flask(__name__)
 # === Configuration section ===
 VECTOR_STORE_PATH = "vectorstore/db_faiss"
 LOCAL_MODEL_NAME = "google/flan-t5-small"
-JOBS_CSV_PATH = "data/jobs.csv"
+JOBS_CSV_PATH = "data/ncs_jobs.csv"
 MONGODB_URI = "mongodb://localhost:27017"
 MONGODB_DBNAME = "SainikHire"
 MONGODB_COLLECTION = "information"
@@ -238,7 +238,71 @@ def get_job_response(prompt=None):
     all_locations = job_data_df['Location'].dropna().unique()
     all_titles = job_data_df['Job Title'].dropna().unique()
 
-    matched_locations = [loc for loc in all_locations if loc.lower() in prompt_lower]
+    # Enhanced location matching logic
+    def normalize_location(loc):
+        # Convert to lowercase, remove special chars, standardize some common variations
+        loc = loc.lower().strip()
+        loc = re.sub(r'[^\w\s]', ' ', loc)  # Replace special chars with space
+        
+        # Standardize state names and common variations
+        state_mapping = {
+            'andra pradesh': 'andhra pradesh',
+            'andhrapradesh': 'andhra pradesh',
+            'ap': 'andhra pradesh',
+            'telengana': 'telangana',
+            'telagana': 'telangana',
+            'tg': 'telangana',
+            'tn': 'tamil nadu',
+            'tamilnadu': 'tamil nadu',
+            'up': 'uttar pradesh',
+            'mp': 'madhya pradesh',
+            'mh': 'maharashtra',
+            'maha': 'maharashtra',
+            'ka': 'karnataka',
+            'kar': 'karnataka',
+            'wb': 'west bengal',
+            'delhi ncr': 'delhi',
+            'ncr': 'delhi',
+            'new delhi': 'delhi',
+            'bangalore': 'bengaluru',
+            'bengalore': 'bengaluru',
+            'bombay': 'mumbai',
+            'calcutta': 'kolkata',
+            'madras': 'chennai',
+            'hyd': 'hyderabad',
+            'secunderabad': 'hyderabad',
+            'pune city': 'pune',
+            'jaipur city': 'jaipur',
+            'kochi': 'cochin',
+            'trivandrum': 'thiruvananthapuram',
+            'tvpm': 'thiruvananthapuram'
+        }
+        
+        for variant, standard in state_mapping.items():
+            if variant in loc:
+                return standard
+        return loc
+
+    # Process user query for location
+    query_locations = []
+    prompt_normalized = normalize_location(prompt_lower)
+    
+    # Extract all possible locations from the user query
+    for loc in all_locations:
+        # Split multi-location entries and check each part
+        location_parts = str(loc).split(';')
+        for part in location_parts:
+            part = part.strip()
+            normalized_part = normalize_location(part)
+            
+            # Check if this location part is mentioned in the query
+            if (normalized_part in prompt_normalized or 
+                prompt_normalized in normalized_part or
+                any(word in prompt_normalized.split() for word in normalized_part.split() if len(word) > 3)):
+                query_locations.append(loc)  # Add the full original location entry
+                break  # Found a match in this location entry, no need to check other parts
+    
+    # Match job titles (keeping existing logic)
     matched_titles = [title for title in all_titles if title.lower() in prompt_lower]
 
     matched_jobs = job_data_df.copy()
@@ -246,10 +310,10 @@ def get_job_response(prompt=None):
         matched_jobs = matched_jobs[matched_jobs['Job Title'].apply(
             lambda x: any(t.lower() in str(x).lower() for t in matched_titles)
         )]
-    if matched_locations:
-        matched_jobs = matched_jobs[matched_jobs['Location'].apply(
-            lambda x: any(l.lower() in str(x).lower() for l in matched_locations)
-        )]
+    
+    # Apply the enhanced location filter
+    if query_locations:
+        matched_jobs = matched_jobs[matched_jobs['Location'].isin(query_locations)]
 
     if matched_jobs.empty:
         return ask_gemini_flash(prompt)
@@ -272,7 +336,12 @@ def get_job_response(prompt=None):
             "fleet", "transport", "driver", "material", "shipping", "procurement", "dispatch",
             "operations", "operation", "admin", "administrative", "compliance", "training",
             "security", "patrol", "fire", "defense", "surveillance", "guard", "supervisor",
-            "monitoring", "control room", "emergency", "safety", "safety officer", "coordinator","executive"
+            "monitoring", "control room", "emergency", "safety", "safety officer", "coordinator","executive",
+            "sales", "banking", "customer", "marketing", "manager", "assistant",
+            "data entry", "operator", "back office", "service", "trainer",
+            "bank", "executive officer", "security officer", "field officer",
+            "officer", "computer operator", "customer care", "call center",
+            "receptionist", "hr", "human resource", "clerk"
         ]
 
         prompt = prompt.lower()
@@ -318,9 +387,10 @@ def get_job_response(prompt=None):
               # f"🗓️**Post Date:** {post_date}",
                 f"📅**Last Date to Apply:** {last_date}",
                 f"📝**Description:** {description}"
+                f"🎯**Skills Required:** {job.get('Skills', 'Not specified')}"
             ]
 
-        elif matched_locations and not matched_titles:
+        elif query_locations and not matched_titles:
             lines = [
                 f"🔹**Job Title:** {job_title_with_status}",
                 f"🏢**Company:** {company}",
@@ -351,6 +421,9 @@ def get_job_response(prompt=None):
             ]
             if description:
                 lines.append(f"📝**Description:** {description}")
+            skills = job.get("Skills", "")
+            if skills:
+                lines.append(f"🎯**Skills Required:** {skills}")
 
         result_lines.append("\n".join(lines))
 
