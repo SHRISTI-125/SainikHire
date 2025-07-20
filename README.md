@@ -1,4 +1,4 @@
-# 🛡️ SainikHire: AI-Powered Employment Platform for Ex-Servicemen
+# 🛡️ SainikHire: AI-based Search Engine for Ex-Servicemen
 <p align="center"> <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img1.png" width="600"/> </p>
 
 # 📌 Overview
