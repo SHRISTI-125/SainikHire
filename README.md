@@ -2,27 +2,24 @@
 <p align="center"> <img src="https://raw.githubusercontent.com/SHRISTI-125/SainikHire/main/output/img1.png" width="600"/> </p>
 
 # 📌 Overview
-SainikHire is a local AI-driven job search platform purpose-built for Ex-Servicemen, helping them transition smoothly into civilian employment. Designed with their unique skillsets and career needs in mind, this tool provides job discovery, resume generation, and personalized recommendations — all in one place.
+SanikHire is a local job search engine specifically designed to support Ex-Servicemen in finding meaningful employment opportunities.
+This project aims to create a dedicated and accessible platform tailored to their unique skills and needs.
+Currently, the application runs locally for demonstration and testing purposes.
+</p>
 
-# ✨ Key Features
+# ✨ About
+SanikHire offers a streamlined and user-friendly experience for ex-servicemen to explore relevant job roles and enhance their employability with supportive tools.
+
+# 🚀 Feature
+
 <ul>
-<li>🔍 Search Engine<br>
-Smart keyword-based job search for instant role discovery.</li>
-<li>
-  📄 CV Generator<br>
-Automatically generates a professional CV using user input.
-</li>
-<li>💬 Chatbot Assistant<br>
-Instant responses to app-related and job-related queries.</li>
-<li>
-  🤖 Job Recommendation System<br>
-AI-powered recommendations based on user profile, experience, and skills.
-</li>
-<li>
-  📧 Email Notifications<br>
-Timely updates on application deadlines and job alerts.
-</li>
+  <li>🔍<b> Search Engine</b> – Enables users to search for job opportunities efficiently.</li>
+  <li>📄<b> CV Generator</b> – Automatically generates professional CVs based on user inputs.</li>
+  <li>💬<b> Chatbot Assistant</b> – Provides answer to queries related to jobs and app.</li>
+  <li>🤖<b> Job Recommendation System</b> – Provides personalized job suggestions based on user profiles and skills.</li>
+  <li>📧 <b>Email Notifications</b> – Sends timely emails for upcoming deadlines and important job alerts</li>
 </ul>
+
 
 # 💡 About the Project
 SainikHire is developed as a full-stack application and currently runs locally for demonstration purposes. It is a scalable prototype designed to be extended for real-time deployment and support nationwide ex-servicemen hiring.
