@@ -12,7 +12,7 @@ import numpy as np
 
 password=password()
 # Email 
-SENDER_EMAIL = "shristikumarisingh125@gmail.com"
+SENDER_EMAIL = "myemail@gmail.com"
 APP_PASSWORD = password
 
 client = MongoClient("mongodb://localhost:27017/")
@@ -127,3 +127,4 @@ def run_scheduler():
 # Run scheduler in background
 t = threading.Thread(target=run_scheduler)
 t.start()
+
